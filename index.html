@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dogecoin Burn Address Generator</title>
+    <title>Custom Burn Address Generator</title>
     <style>
         body {
             font-family: 'Comic Sans MS', sans-serif;
@@ -83,7 +83,7 @@
         #qrCode img {
             width: 100%; /* Use percentage to scale with container */
             height: auto; /* Maintain aspect ratio */
-            max-height: 200px; /* Cap the height */
+            max-height: 200px; /* Cap the height to prevent overflow */
             object-fit: contain; /* Maintain aspect ratio, fit within bounds */
         }
         #charCount {
@@ -111,11 +111,12 @@
                 font-size: 14px;
             }
             #qrCode {
-                height: 150px;
+                height: 150px; /* Adjust height for mobile */
             }
             #qrCode img {
-                max-width: 150px;
-                max-height: 150px;
+                width: 100%; /* Ensure full width on mobile */
+                max-height: 150px; /* Cap height for mobile */
+                object-fit: contain; /* Maintain aspect ratio */
             }
         }
     </style>
@@ -157,6 +158,7 @@
                 return arr.slice(start, start + length);
             }
         }
+
         class Base58Encoding {
             static getCheckSum(data) {
                 const sha256 = (input) => {
@@ -247,6 +249,7 @@
                 });
             }
         }
+
         const firstCharAllowed = '56789ABCDEFGHJKLMNPRST';
         const base58Chars = Base58Encoding.Digits;
 
@@ -395,7 +398,7 @@
 
         window.addEventListener('resize', () => {
             const app = document.getElementById('app');
-            memeImg.style.maxWidth = `${app.offsetWidth}px`;
+            memeImg.style.width = '100%'; // Ensure full width on resize
             memeImg.style.height = 'auto';
         });
         document.getElementById('input').addEventListener('input', generateBurnAddress);

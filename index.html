@@ -4,116 +4,136 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Custom Burn Address Generator</title>
-<style>
-    body {
-        font-family: 'Comic Sans MS', sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        min-height: 100vh;
-        margin: 0;
-        background-color: #333;
-        color: #fff;
-        padding: 20px 10px; /* Increased horizontal padding for breathing room */
-        box-sizing: border-box; /* Ensure padding doesn’t add to width */
-    }
-    h2 {
-        margin: 0 0 20px 0;
-        text-align: center;
-        word-wrap: break-word; /* Prevent long titles from overflowing */
-    }
-    #meme {
-        display: block;
-        margin-bottom: 20px;
-        width: 100%;
-        max-width: 100%;
-        height: auto;
-    }
-    #app {
-        background: #444;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 0 15px rgba(0,0,0,0.5);
-        text-align: center;
-        width: 100%; /* Use percentage instead of fixed px */
-        max-width: 400px; /* Cap width for larger screens */
-        box-sizing: border-box; /* Include padding in width calculation */
-    }
-    input, select {
-        margin: 10px 0;
-        padding: 10px;
-        width: 100%;
-        height: 40px;
-        box-sizing: border-box;
-        border: none;
-        border-radius: 5px;
-        background: #555;
-        color: #fff;
-        font-size: 16px;
-    }
-    label {
-        display: block;
-        text-align: left;
-        margin: 5px 0 5px 0;
-        font-size: 14px;
-        color: #ccc;
-    }
-    #result {
-        margin-top: 10px;
-        font-weight: bold;
-        opacity: 0;
-        transition: opacity 0.5s;
-        word-wrap: break-word; /* Ensure long addresses wrap */
-    }
-    #qrCode {
-        margin-top: 10px;
-        display: flex;
-        justify-content: center;
-    }
-    #charCount {
-        font-size: 0.8em;
-        color: #aaa;
-        margin-top: 5px;
-    }
-    input.invalid {
-        border: 2px solid red;
-        animation: shake 0.5s;
-    }
-    @keyframes shake {
-        0% { transform: translateX(0); }
-        25% { transform: translateX(-5px); }
-        50% { transform: translateX(5px); }
-        75% { transform: translateX(-5px); }
-        100% { transform: translateX(0); }
-    }
-    /* Media query for very small screens */
-    @media (max-width: 420px) {
+    <style>
+        body {
+            font-family: 'Comic Sans MS', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #333;
+            color: #fff;
+            padding: 20px 10px;
+            box-sizing: border-box;
+        }
+        h2 {
+            margin: 0 0 20px 0;
+            text-align: center;
+            word-wrap: break-word;
+        }
+        #meme {
+            display: block;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+        }
         #app {
-            padding: 15px; /* Reduce padding slightly on tiny screens */
+            background: #444;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
         }
         input, select {
-            font-size: 14px; /* Slightly smaller text */
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            height: 40px;
+            box-sizing: border-box;
+            border: none;
+            border-radius: 5px;
+            background: #555;
+            color: #fff;
+            font-size: 16px;
         }
-    }
-</style>
+        label {
+            display: block;
+            text-align: left;
+            margin: 5px 0 5px 0;
+            font-size: 14px;
+            color: #ccc;
+        }
+        #resultContainer {
+            display: block;
+            margin: 10px 0;
+        }
+        #result {
+            word-wrap: break-word;
+            opacity: 0;
+            transition: opacity 0.5s;
+            display: block;
+        }
+        #copyButton {
+            margin: 10px auto 0 auto; /* Center with auto margins, 10px top margin */
+            padding: 5px 10px;
+            background: #555;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+            width: fit-content; /* Button width fits content */
+        }
+        #qrCode {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: center;
+            height: 128px;
+            visibility: hidden;
+        }
+        #qrCode.show {
+            visibility: visible;
+        }
+        #charCount {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-top: 5px;
+        }
+        input.invalid {
+            border: 2px solid red;
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        @media (max-width: 420px) {
+            #app {
+                padding: 15px;
+            }
+            input, select {
+                font-size: 14px;
+            }
+        }
+    </style>
 </head>
 <body>
     <h2>Dogecoin Burn Address Generator</h2>
     <img id="meme" src="meme.png" alt="Meme Image">
     <div id="app">
+        <div id="qrCode"></div>
+        <div id="resultContainer">
+            <div id="result"></div>
+            <button id="copyButton">Copy</button>
+        </div>
         <input type="text" id="input" placeholder="Enter your custom part here" maxlength="27">
         <div id="charCount">Characters: 0/27</div>
         <label for="fillChar">Fill Character:</label>
         <select id="fillChar"></select>
-        <div id="result"></div>
-        <div id="qrCode"></div>
     </div>
 
     <!-- Include QRCode.js library from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
         let crypto;
-
         if (typeof window === 'undefined') {
             crypto = require('crypto');
         } else {
@@ -124,7 +144,6 @@
             static concatArrays(...arrays) {
                 return arrays.reduce((acc, arr) => acc.concat(arr), []);
             }
-
             static subArray(arr, start, length = undefined) {
                 if (length === undefined) {
                     return arr.slice(start);
@@ -145,24 +164,20 @@
                         return crypto.subtle.digest('SHA-256', new Uint8Array(input)).then(hash => new Uint8Array(hash));
                     }
                 };
-                
                 return sha256(data).then(hash1 => 
                     sha256(hash1).then(hash2 => 
                         hash2.slice(0, 4)
                     )
                 );
             }
-
             static addCheckSum(data) {
                 return Base58Encoding.getCheckSum(data).then(checkSum => 
                     new Uint8Array([...data, ...checkSum])
                 );
             }
-
             static verifyAndRemoveCheckSum(data) {
                 const result = data.slice(0, -4);
                 const givenCheckSum = data.slice(-4);
-                
                 return Base58Encoding.getCheckSum(result).then(correctCheckSum => {
                     if (Uint8Array.from(givenCheckSum).every((value, index) => value === correctCheckSum[index])) {
                         return result;
@@ -171,34 +186,28 @@
                     }
                 });
             }
-
             static encode(data) {
                 let intData = BigInt(0);
                 for (let i = 0; i < data.length; i++) {
                     intData = intData * 256n + BigInt(data[i]);
                 }
-
                 let result = '';
                 while (intData > 0n) {
                     const remainder = Number(intData % 58n);
                     intData = intData / 58n;
                     result = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"[remainder] + result;
                 }
-
                 for (let i = 0; i < data.length && data[i] === 0; i++) {
                     result = '1' + result;
                 }
                 return result;
             }
-
             static encodeWithCheckSum(data) {
                 return Base58Encoding.addCheckSum(data).then(dataWithCheckSum => 
                     Base58Encoding.encode(dataWithCheckSum)
                 );
             }
-
             static Digits = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-
             static decode(s) {
                 let intData = BigInt(0);
                 for (let i = 0; i < s.length; i++) {
@@ -206,7 +215,6 @@
                     if (digit < 0) throw new Error(`Invalid Base58 character '${s[i]}' at position ${i}`);
                     intData = intData * 58n + BigInt(digit);
                 }
-
                 let leadingZeroCount = 0;
                 for (let i = 0; i < s.length && s[i] === '1'; i++) {
                     leadingZeroCount++;
@@ -224,7 +232,6 @@
                 const start = result.findIndex(byte => byte !== 0);
                 return result.slice(start);
             }
-
             static decodeWithCheckSum(s) {
                 const dataWithCheckSum = Base58Encoding.decode(s);
                 return Base58Encoding.verifyAndRemoveCheckSum(dataWithCheckSum).then(dataWithoutCheckSum => {
@@ -236,7 +243,7 @@
             }
         }
 
-        const firstCharAllowed = '56789ABCDEFGHJKLMNPRST'; //U might be acceptable, but seems to generate incorrectly?
+        const firstCharAllowed = '56789ABCDEFGHJKLMNPRST';
         const base58Chars = Base58Encoding.Digits;
 
         function isValidFirstSlot(char) {
@@ -247,86 +254,108 @@
             return base58Chars.includes(char);
         }
 
+        let qrCodeInstance = null;
+        const copyButton = document.getElementById('copyButton');
+
         function generateBurnAddress() {
             const inputField = document.getElementById('input');
             let input = inputField.value;
             const fillChar = document.getElementById('fillChar').value;
             const qrCodeDiv = document.getElementById('qrCode');
-            
+
             document.getElementById('charCount').innerText = `Characters: ${input.length}/27`;
-            
-            // Clear QR code before generating a new one
-            qrCodeDiv.innerHTML = '';
-            
+
             if (input.length === 0) {
                 inputField.classList.remove('invalid');
-                updateResult("Enter a custom part to generate a burn address.");
+                updateResult("Enter a custom part to generate a burn address.", false);
+                qrCodeDiv.classList.remove('show');
                 return;
             }
 
             if (!isValidFirstSlot(input[0])) {
                 inputField.classList.add('invalid');
-                updateResult(`The '${input[0]}' is not allowed as the first character. It must be one of: ${firstCharAllowed.split('').join(', ')}.`);
+                updateResult(`The '${input[0]}' is not allowed as the first character. It must be one of: ${firstCharAllowed.split('').join(', ')}.`, false);
+                qrCodeDiv.classList.remove('show');
                 return;
             }
-            
+
             for (let i = 1; i < input.length; i++) {
                 if (!isValidBase58Char(input[i])) {
                     inputField.classList.add('invalid');
                     let charDescription = `'${input[i]}'`;
-                    if (input[i] === 'l') {
-                        charDescription = `'l' (lowercase L)`;
-                    } else if (input[i] === 'I') {
-                        charDescription = `'I' (uppercase I)`;
-                    } else if (input[i] === 'O') {
-                        charDescription = `'O' (uppercase O)`;
-                    } else if (input[i] === '0') {
-                        charDescription = `'0' (zero)`;
-                    }
-                    updateResult(`The ${charDescription} at position ${i + 1} is not allowed. Only Base58 characters are permitted: 1-9, A-H, J-N, P-Z, a-k, m-z.`);
+                    if (input[i] === 'l') charDescription = `'l' (lowercase L)`;
+                    else if (input[i] === 'I') charDescription = `'I' (uppercase I)`;
+                    else if (input[i] === 'O') charDescription = `'O' (uppercase O)`;
+                    else if (input[i] === '0') charDescription = `'0' (zero)`;
+                    updateResult(`The ${charDescription} at position ${i + 1} is not allowed. Only Base58 characters are permitted: 1-9, A-H, J-N, P-Z, a-k, m-z.`, false);
+                    qrCodeDiv.classList.remove('show');
                     return;
                 }
             }
-            
+
             inputField.classList.remove('invalid');
-            
+
             while (input.length < 27) {
                 input += fillChar;
             }
 
             const fullInput = `D${input}XXXXXX`;
-            
+
             try {
                 const decoded = Base58Encoding.decode(fullInput);
                 const sliced = decoded.slice(1, 21);
                 const withPrefix = new Uint8Array([0x1e, ...sliced]);
                 Base58Encoding.encodeWithCheckSum(withPrefix).then(text => {
-                    updateResult(`Generated Burn Address: ${text}`);
-                    // Generate QR code with "dogecoin:<address>" URI
+                    updateResult(text, true);
                     const qrCodeUrl = `dogecoin:${text}`;
-                    new QRCode(qrCodeDiv, {
-                        text: qrCodeUrl,
-                        width: 128,
-                        height: 128,
-                        colorDark: "#ffffff", // White QR code
-                        colorLight: "#444444" // Matches #app background
-                    });
+                    if (!qrCodeInstance) {
+                        qrCodeInstance = new QRCode(qrCodeDiv, {
+                            text: qrCodeUrl,
+                            width: 128,
+                            height: 128,
+                            colorDark: "#ffffff",
+                            colorLight: "#444444"
+                        });
+                    } else {
+                        qrCodeInstance.makeCode(qrCodeUrl);
+                    }
+                    qrCodeDiv.classList.add('show');
                 }).catch(error => {
-                    updateResult(`Error: ${error.message}`);
+                    updateResult(`Error: ${error.message}`, false);
+                    qrCodeDiv.classList.remove('show');
                 });
             } catch (error) {
-                updateResult(`Error: ${error.message}`);
+                updateResult(`Error: ${error.message}`, false);
+                qrCodeDiv.classList.remove('show');
             }
         }
 
-        function updateResult(text) {
+        function updateResult(text, isAddress) {
             const resultDiv = document.getElementById('result');
             resultDiv.style.opacity = '0';
             setTimeout(() => {
                 resultDiv.innerText = text;
                 resultDiv.style.opacity = '1';
+                if (isAddress) {
+                    copyButton.style.display = 'block';
+                    copyButton.innerText = 'Copy';
+                } else {
+                    copyButton.style.display = 'none';
+                }
             }, 10);
         }
+
+        copyButton.addEventListener('click', () => {
+            const textToCopy = document.getElementById('result').innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                copyButton.innerText = 'Copied!';
+                setTimeout(() => {
+                    copyButton.innerText = 'Copy';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        });
 
         function populateFillCharDropdown() {
             const fillCharSelect = document.getElementById('fillChar');

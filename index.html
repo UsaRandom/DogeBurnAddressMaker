@@ -1,3 +1,4 @@
+html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -76,13 +77,15 @@
             margin-bottom: 10px;
             display: flex;
             justify-content: center;
-            height: 128px;
+            height: 200px; /* Keeping the larger height for the image */
+            width: 100%; /* Ensure width matches container */
             overflow: hidden;
         }
         #qrCode img {
-            width: 128px;
-            height: 128px;
-            object-fit: contain;
+            width: 100%; /* Use percentage to scale with container */
+            height: auto; /* Maintain aspect ratio */
+            max-height: 200px; /* Cap the height */
+            object-fit: contain; /* Maintain aspect ratio, fit within bounds */
         }
         #charCount {
             font-size: 0.8em;
@@ -103,9 +106,17 @@
         @media (max-width: 420px) {
             #app {
                 padding: 15px;
+                max-width: 90%;
             }
             input, select {
                 font-size: 14px;
+            }
+            #qrCode {
+                height: 150px;
+            }
+            #qrCode img {
+                max-width: 150px;
+                max-height: 150px;
             }
         }
     </style>
@@ -114,7 +125,7 @@
     <h2>Dogecoin Burn Address Generator</h2>
     <div id="app">
         <div id="qrCode">
-            <img id="meme" src="meme.png" alt="Meme Placeholder">
+            <img id="meme" src="meme.png" alt="Meme Placeholder" style="display: none;">
         </div>
         <div id="resultContainer">
             <div id="result"></div>
@@ -147,7 +158,6 @@
                 return arr.slice(start, start + length);
             }
         }
-
         class Base58Encoding {
             static getCheckSum(data) {
                 const sha256 = (input) => {
@@ -238,7 +248,6 @@
                 });
             }
         }
-
         const firstCharAllowed = '56789ABCDEFGHJKLMNPRST';
         const base58Chars = Base58Encoding.Digits;
 
@@ -339,18 +348,21 @@
         }
 
         function showQRCode(qrCodeUrl) {
-            qrCodeDiv.innerHTML = '';
-            if (!qrCodeInstance) {
+            if (qrCodeInstance) {
+                // Clear the existing QR code and recreate
+                qrCodeInstance.clear();
+                qrCodeInstance.makeCode(qrCodeUrl);
+            } else {
+                // Create new QR code instance
                 qrCodeInstance = new QRCode(qrCodeDiv, {
                     text: qrCodeUrl,
-                    width: 128,
-                    height: 128,
+                    width: 200,
+                    height: 200,
                     colorDark: "#ffffff",
                     colorLight: "#444444"
                 });
-            } else {
-                qrCodeInstance.makeCode(qrCodeUrl);
             }
+            memeImg.style.display = 'none'; // Hide the meme when showing QR code
         }
 
         copyButton.addEventListener('click', () => {
@@ -384,7 +396,7 @@
 
         window.addEventListener('resize', () => {
             const app = document.getElementById('app');
-            memeImg.style.width = `${app.offsetWidth}px`;
+            memeImg.style.maxWidth = `${app.offsetWidth}px`;
             memeImg.style.height = 'auto';
         });
         document.getElementById('input').addEventListener('input', generateBurnAddress);

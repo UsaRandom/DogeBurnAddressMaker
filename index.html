@@ -222,7 +222,7 @@
             }
         }
 
-        const firstCharAllowed = '56789ABCDEFGHJKLMNPRSTU';
+        const firstCharAllowed = '56789ABCDEFGHJKLMNPRST'; //U might be acceptable, but seems to generate incorrectly?
         const base58Chars = Base58Encoding.Digits;
 
         function isValidFirstSlot(char) {

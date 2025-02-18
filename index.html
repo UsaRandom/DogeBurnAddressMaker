@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Burn Address Generator</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #333;
+            color: #fff;
+            padding: 20px 0;
+        }
+        h2 {
+            margin: 0 0 20px 0;
+            text-align: center;
+        }
+        #meme {
+            display: block;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+        }
+        #app {
+            background: #444;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            text-align: center;
+            width: 400px;
+        }
+        input, select {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            height: 40px;
+            box-sizing: border-box;
+            border: none;
+            border-radius: 5px;
+            background: #555;
+            color: #fff;
+            font-size: 16px;
+        }
+        label {
+            display: block;
+            text-align: left;
+            margin: 5px 0 5px 0;
+            font-size: 14px;
+            color: #ccc;
+        }
+        #result {
+            margin-top: 10px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        #qrCode {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+        }
+        #charCount {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-top: 5px;
+        }
+        input.invalid {
+            border: 2px solid red;
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <h2>Dogecoin Burn Address Generator</h2>
+    <img id="meme" src="meme.png" alt="Meme Image">
+    <div id="app">
+        <input type="text" id="input" placeholder="Enter your custom part here" maxlength="27">
+        <div id="charCount">Characters: 0/27</div>
+        <label for="fillChar">Fill Character:</label>
+        <select id="fillChar"></select>
+        <div id="result"></div>
+        <div id="qrCode"></div>
+    </div>
+
+    <!-- Include QRCode.js library from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        let crypto;
+
+        if (typeof window === 'undefined') {
+            crypto = require('crypto');
+        } else {
+            crypto = window.crypto || window.msCrypto;
+        }
+
+        class ArrayHelpers {
+            static concatArrays(...arrays) {
+                return arrays.reduce((acc, arr) => acc.concat(arr), []);
+            }
+
+            static subArray(arr, start, length = undefined) {
+                if (length === undefined) {
+                    return arr.slice(start);
+                }
+                return arr.slice(start, start + length);
+            }
+        }
+
+        class Base58Encoding {
+            static getCheckSum(data) {
+                const sha256 = (input) => {
+                    if (typeof window === 'undefined') {
+                        return new Promise((resolve) => {
+                            const hash = crypto.createHash('sha256').update(Buffer.from(input)).digest();
+                            resolve(hash);
+                        });
+                    } else {
+                        return crypto.subtle.digest('SHA-256', new Uint8Array(input)).then(hash => new Uint8Array(hash));
+                    }
+                };
+                
+                return sha256(data).then(hash1 => 
+                    sha256(hash1).then(hash2 => 
+                        hash2.slice(0, 4)
+                    )
+                );
+            }
+
+            static addCheckSum(data) {
+                return Base58Encoding.getCheckSum(data).then(checkSum => 
+                    new Uint8Array([...data, ...checkSum])
+                );
+            }
+
+            static verifyAndRemoveCheckSum(data) {
+                const result = data.slice(0, -4);
+                const givenCheckSum = data.slice(-4);
+                
+                return Base58Encoding.getCheckSum(result).then(correctCheckSum => {
+                    if (Uint8Array.from(givenCheckSum).every((value, index) => value === correctCheckSum[index])) {
+                        return result;
+                    } else {
+                        return null;
+                    }
+                });
+            }
+
+            static encode(data) {
+                let intData = BigInt(0);
+                for (let i = 0; i < data.length; i++) {
+                    intData = intData * 256n + BigInt(data[i]);
+                }
+
+                let result = '';
+                while (intData > 0n) {
+                    const remainder = Number(intData % 58n);
+                    intData = intData / 58n;
+                    result = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"[remainder] + result;
+                }
+
+                for (let i = 0; i < data.length && data[i] === 0; i++) {
+                    result = '1' + result;
+                }
+                return result;
+            }
+
+            static encodeWithCheckSum(data) {
+                return Base58Encoding.addCheckSum(data).then(dataWithCheckSum => 
+                    Base58Encoding.encode(dataWithCheckSum)
+                );
+            }
+
+            static Digits = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+            static decode(s) {
+                let intData = BigInt(0);
+                for (let i = 0; i < s.length; i++) {
+                    const digit = this.Digits.indexOf(s[i]);
+                    if (digit < 0) throw new Error(`Invalid Base58 character '${s[i]}' at position ${i}`);
+                    intData = intData * 58n + BigInt(digit);
+                }
+
+                let leadingZeroCount = 0;
+                for (let i = 0; i < s.length && s[i] === '1'; i++) {
+                    leadingZeroCount++;
+                }
+                let result = new Uint8Array(leadingZeroCount + (s.length - leadingZeroCount) * 733 / 1000 + 1);
+                let byteIndex = result.length - 1;
+                while (intData > 0n) {
+                    result[byteIndex] = Number(intData % 256n);
+                    intData = intData / 256n;
+                    byteIndex--;
+                }
+                for (let i = 0; i < leadingZeroCount; i++) {
+                    result[i] = 0;
+                }
+                const start = result.findIndex(byte => byte !== 0);
+                return result.slice(start);
+            }
+
+            static decodeWithCheckSum(s) {
+                const dataWithCheckSum = Base58Encoding.decode(s);
+                return Base58Encoding.verifyAndRemoveCheckSum(dataWithCheckSum).then(dataWithoutCheckSum => {
+                    if (dataWithoutCheckSum === null) {
+                        throw new Error("Base58 checksum is invalid");
+                    }
+                    return dataWithoutCheckSum;
+                });
+            }
+        }
+
+        const firstCharAllowed = '56789ABCDEFGHJKLMNPRSTU';
+        const base58Chars = Base58Encoding.Digits;
+
+        function isValidFirstSlot(char) {
+            return firstCharAllowed.includes(char);
+        }
+
+        function isValidBase58Char(char) {
+            return base58Chars.includes(char);
+        }
+
+        function generateBurnAddress() {
+            const inputField = document.getElementById('input');
+            let input = inputField.value;
+            const fillChar = document.getElementById('fillChar').value;
+            const qrCodeDiv = document.getElementById('qrCode');
+            
+            document.getElementById('charCount').innerText = `Characters: ${input.length}/27`;
+            
+            // Clear QR code before generating a new one
+            qrCodeDiv.innerHTML = '';
+            
+            if (input.length === 0) {
+                inputField.classList.remove('invalid');
+                updateResult("Enter a custom part to generate a burn address.");
+                return;
+            }
+
+            if (!isValidFirstSlot(input[0])) {
+                inputField.classList.add('invalid');
+                updateResult(`The '${input[0]}' is not allowed as the first character. It must be one of: ${firstCharAllowed.split('').join(', ')}.`);
+                return;
+            }
+            
+            for (let i = 1; i < input.length; i++) {
+                if (!isValidBase58Char(input[i])) {
+                    inputField.classList.add('invalid');
+                    let charDescription = `'${input[i]}'`;
+                    if (input[i] === 'l') {
+                        charDescription = `'l' (lowercase L)`;
+                    } else if (input[i] === 'I') {
+                        charDescription = `'I' (uppercase I)`;
+                    } else if (input[i] === 'O') {
+                        charDescription = `'O' (uppercase O)`;
+                    } else if (input[i] === '0') {
+                        charDescription = `'0' (zero)`;
+                    }
+                    updateResult(`The ${charDescription} at position ${i + 1} is not allowed. Only Base58 characters are permitted: 1-9, A-H, J-N, P-Z, a-k, m-z.`);
+                    return;
+                }
+            }
+            
+            inputField.classList.remove('invalid');
+            
+            while (input.length < 27) {
+                input += fillChar;
+            }
+
+            const fullInput = `D${input}XXXXXX`;
+            
+            try {
+                const decoded = Base58Encoding.decode(fullInput);
+                const sliced = decoded.slice(1, 21);
+                const withPrefix = new Uint8Array([0x1e, ...sliced]);
+                Base58Encoding.encodeWithCheckSum(withPrefix).then(text => {
+                    updateResult(`Generated Burn Address: ${text}`);
+                    // Generate QR code with "dogecoin:<address>" URI
+                    const qrCodeUrl = `dogecoin:${text}`;
+                    new QRCode(qrCodeDiv, {
+                        text: qrCodeUrl,
+                        width: 128,
+                        height: 128,
+                        colorDark: "#ffffff", // White QR code
+                        colorLight: "#444444" // Matches #app background
+                    });
+                }).catch(error => {
+                    updateResult(`Error: ${error.message}`);
+                });
+            } catch (error) {
+                updateResult(`Error: ${error.message}`);
+            }
+        }
+
+        function updateResult(text) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.opacity = '0';
+            setTimeout(() => {
+                resultDiv.innerText = text;
+                resultDiv.style.opacity = '1';
+            }, 10);
+        }
+
+        function populateFillCharDropdown() {
+            const fillCharSelect = document.getElementById('fillChar');
+            const base58Chars = Base58Encoding.Digits;
+            for (let char of base58Chars) {
+                const option = document.createElement('option');
+                option.value = char;
+                option.text = char;
+                fillCharSelect.appendChild(option);
+            }
+            fillCharSelect.value = 'x';
+        }
+
+        function resizeMeme() {
+            const app = document.getElementById('app');
+            const meme = document.getElementById('meme');
+            const appWidth = app.offsetWidth;
+            meme.style.width = `${appWidth}px`;
+        }
+
+        window.onload = function() {
+            populateFillCharDropdown();
+            resizeMeme();
+            generateBurnAddress();
+        };
+
+        window.addEventListener('resize', resizeMeme);
+        document.getElementById('input').addEventListener('input', generateBurnAddress);
+        document.getElementById('fillChar').addEventListener('change', generateBurnAddress);
+    </script>
+</body>
+</html>

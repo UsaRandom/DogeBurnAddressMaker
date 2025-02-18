@@ -22,13 +22,6 @@
             text-align: center;
             word-wrap: break-word;
         }
-        #meme {
-            display: block;
-            margin-bottom: 20px;
-            width: 100%;
-            max-width: 100%;
-            height: auto;
-        }
         #app {
             background: #444;
             padding: 20px;
@@ -69,7 +62,7 @@
             display: block;
         }
         #copyButton {
-            margin: 10px auto 0 auto; /* Center with auto margins, 10px top margin */
+            margin: 10px auto 0 auto;
             padding: 5px 10px;
             background: #555;
             color: #fff;
@@ -77,17 +70,19 @@
             border-radius: 5px;
             cursor: pointer;
             display: none;
-            width: fit-content; /* Button width fits content */
+            width: fit-content;
         }
         #qrCode {
             margin-bottom: 10px;
             display: flex;
             justify-content: center;
             height: 128px;
-            visibility: hidden;
+            overflow: hidden;
         }
-        #qrCode.show {
-            visibility: visible;
+        #qrCode img {
+            width: 128px;
+            height: 128px;
+            object-fit: contain;
         }
         #charCount {
             font-size: 0.8em;
@@ -117,9 +112,10 @@
 </head>
 <body>
     <h2>Dogecoin Burn Address Generator</h2>
-    <img id="meme" src="meme.png" alt="Meme Image">
     <div id="app">
-        <div id="qrCode"></div>
+        <div id="qrCode">
+            <img id="meme" src="meme.png" alt="Meme Placeholder">
+        </div>
         <div id="resultContainer">
             <div id="result"></div>
             <button id="copyButton">Copy</button>
@@ -255,27 +251,28 @@
         }
 
         let qrCodeInstance = null;
+        const qrCodeDiv = document.getElementById('qrCode');
+        const memeImg = document.getElementById('meme');
         const copyButton = document.getElementById('copyButton');
 
         function generateBurnAddress() {
             const inputField = document.getElementById('input');
             let input = inputField.value;
             const fillChar = document.getElementById('fillChar').value;
-            const qrCodeDiv = document.getElementById('qrCode');
 
             document.getElementById('charCount').innerText = `Characters: ${input.length}/27`;
 
             if (input.length === 0) {
                 inputField.classList.remove('invalid');
                 updateResult("Enter a custom part to generate a burn address.", false);
-                qrCodeDiv.classList.remove('show');
+                showMeme();
                 return;
             }
 
             if (!isValidFirstSlot(input[0])) {
                 inputField.classList.add('invalid');
                 updateResult(`The '${input[0]}' is not allowed as the first character. It must be one of: ${firstCharAllowed.split('').join(', ')}.`, false);
-                qrCodeDiv.classList.remove('show');
+                showMeme();
                 return;
             }
 
@@ -288,7 +285,7 @@
                     else if (input[i] === 'O') charDescription = `'O' (uppercase O)`;
                     else if (input[i] === '0') charDescription = `'0' (zero)`;
                     updateResult(`The ${charDescription} at position ${i + 1} is not allowed. Only Base58 characters are permitted: 1-9, A-H, J-N, P-Z, a-k, m-z.`, false);
-                    qrCodeDiv.classList.remove('show');
+                    showMeme();
                     return;
                 }
             }
@@ -308,25 +305,14 @@
                 Base58Encoding.encodeWithCheckSum(withPrefix).then(text => {
                     updateResult(text, true);
                     const qrCodeUrl = `dogecoin:${text}`;
-                    if (!qrCodeInstance) {
-                        qrCodeInstance = new QRCode(qrCodeDiv, {
-                            text: qrCodeUrl,
-                            width: 128,
-                            height: 128,
-                            colorDark: "#ffffff",
-                            colorLight: "#444444"
-                        });
-                    } else {
-                        qrCodeInstance.makeCode(qrCodeUrl);
-                    }
-                    qrCodeDiv.classList.add('show');
+                    showQRCode(qrCodeUrl);
                 }).catch(error => {
                     updateResult(`Error: ${error.message}`, false);
-                    qrCodeDiv.classList.remove('show');
+                    showMeme();
                 });
             } catch (error) {
                 updateResult(`Error: ${error.message}`, false);
-                qrCodeDiv.classList.remove('show');
+                showMeme();
             }
         }
 
@@ -343,6 +329,28 @@
                     copyButton.style.display = 'none';
                 }
             }, 10);
+        }
+
+        function showMeme() {
+            qrCodeDiv.innerHTML = '';
+            qrCodeDiv.appendChild(memeImg);
+            memeImg.style.display = 'block';
+            qrCodeInstance = null; // Reset QR code instance
+        }
+
+        function showQRCode(qrCodeUrl) {
+            qrCodeDiv.innerHTML = '';
+            if (!qrCodeInstance) {
+                qrCodeInstance = new QRCode(qrCodeDiv, {
+                    text: qrCodeUrl,
+                    width: 128,
+                    height: 128,
+                    colorDark: "#ffffff",
+                    colorLight: "#444444"
+                });
+            } else {
+                qrCodeInstance.makeCode(qrCodeUrl);
+            }
         }
 
         copyButton.addEventListener('click', () => {
@@ -369,20 +377,16 @@
             fillCharSelect.value = 'x';
         }
 
-        function resizeMeme() {
-            const app = document.getElementById('app');
-            const meme = document.getElementById('meme');
-            const appWidth = app.offsetWidth;
-            meme.style.width = `${appWidth}px`;
-        }
-
         window.onload = function() {
             populateFillCharDropdown();
-            resizeMeme();
             generateBurnAddress();
         };
 
-        window.addEventListener('resize', resizeMeme);
+        window.addEventListener('resize', () => {
+            const app = document.getElementById('app');
+            memeImg.style.width = `${app.offsetWidth}px`;
+            memeImg.style.height = 'auto';
+        });
         document.getElementById('input').addEventListener('input', generateBurnAddress);
         document.getElementById('fillChar').addEventListener('change', generateBurnAddress);
     </script>

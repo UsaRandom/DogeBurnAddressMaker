@@ -4,84 +4,98 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Custom Burn Address Generator</title>
-    <style>
-        body {
-            font-family: 'Comic Sans MS', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #333;
-            color: #fff;
-            padding: 20px 5px;
-        }
-        h2 {
-            margin: 0 0 20px 0;
-            text-align: center;
-        }
-        #meme {
-            display: block;
-            margin-bottom: 20px;
-            width: 100%;
-            max-width: 100%;
-            height: auto;
-        }
+<style>
+    body {
+        font-family: 'Comic Sans MS', sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        background-color: #333;
+        color: #fff;
+        padding: 20px 10px; /* Increased horizontal padding for breathing room */
+        box-sizing: border-box; /* Ensure padding doesn’t add to width */
+    }
+    h2 {
+        margin: 0 0 20px 0;
+        text-align: center;
+        word-wrap: break-word; /* Prevent long titles from overflowing */
+    }
+    #meme {
+        display: block;
+        margin-bottom: 20px;
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+    }
+    #app {
+        background: #444;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        text-align: center;
+        width: 100%; /* Use percentage instead of fixed px */
+        max-width: 400px; /* Cap width for larger screens */
+        box-sizing: border-box; /* Include padding in width calculation */
+    }
+    input, select {
+        margin: 10px 0;
+        padding: 10px;
+        width: 100%;
+        height: 40px;
+        box-sizing: border-box;
+        border: none;
+        border-radius: 5px;
+        background: #555;
+        color: #fff;
+        font-size: 16px;
+    }
+    label {
+        display: block;
+        text-align: left;
+        margin: 5px 0 5px 0;
+        font-size: 14px;
+        color: #ccc;
+    }
+    #result {
+        margin-top: 10px;
+        font-weight: bold;
+        opacity: 0;
+        transition: opacity 0.5s;
+        word-wrap: break-word; /* Ensure long addresses wrap */
+    }
+    #qrCode {
+        margin-top: 10px;
+        display: flex;
+        justify-content: center;
+    }
+    #charCount {
+        font-size: 0.8em;
+        color: #aaa;
+        margin-top: 5px;
+    }
+    input.invalid {
+        border: 2px solid red;
+        animation: shake 0.5s;
+    }
+    @keyframes shake {
+        0% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        50% { transform: translateX(5px); }
+        75% { transform: translateX(-5px); }
+        100% { transform: translateX(0); }
+    }
+    /* Media query for very small screens */
+    @media (max-width: 420px) {
         #app {
-            background: #444;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
-            text-align: center;
-            width: 400px;
+            padding: 15px; /* Reduce padding slightly on tiny screens */
         }
         input, select {
-            margin: 10px 0;
-            padding: 10px;
-            width: 100%;
-            height: 40px;
-            box-sizing: border-box;
-            border: none;
-            border-radius: 5px;
-            background: #555;
-            color: #fff;
-            font-size: 16px;
+            font-size: 14px; /* Slightly smaller text */
         }
-        label {
-            display: block;
-            text-align: left;
-            margin: 5px 0 5px 0;
-            font-size: 14px;
-            color: #ccc;
-        }
-        #result {
-            margin-top: 10px;
-            font-weight: bold;
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-        #qrCode {
-            margin-top: 10px;
-            display: flex;
-            justify-content: center;
-        }
-        #charCount {
-            font-size: 0.8em;
-            color: #aaa;
-            margin-top: 5px;
-        }
-        input.invalid {
-            border: 2px solid red;
-            animation: shake 0.5s;
-        }
-        @keyframes shake {
-            0% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            50% { transform: translateX(5px); }
-            75% { transform: translateX(-5px); }
-            100% { transform: translateX(0); }
-        }
-    </style>
+    }
+</style>
 </head>
 <body>
     <h2>Dogecoin Burn Address Generator</h2>
